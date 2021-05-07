@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<header>
+    <meta charset="utf-8">
+    <script src="dist/djvu.js"></script>
+    <script src="dist/djvu_viewer.js"></script>
+    <link href="dist/djvu_viewer.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0px;
+        }
+
+        #for_viewer {
+            width: 100%;
+            height: 95vh;
+            margin-bottom: 0vh;
+        }
+    </style>
+    <script>
+        window.onload = function () {
+            // save as a global value
+            window.ViewerInstance = new DjVu.Viewer();
+            // render into the element
+            window.ViewerInstance.render(
+                document.querySelector("#for_viewer")
+            );
+            var req = new XMLHttpRequest;
+            req.open('GET', 'data:application/pdf;base64,');
+            req.responseType = 'arraybuffer';
+            req.onload = function fileLoaded(e) {
+                window.ViewerInstance.loadDocument(e.target.response);
+            }
+            req.send();
+        };
+    </script>
+</header>
+<body>
+    <div id="for_viewer"></div>
+</body>
+</html>

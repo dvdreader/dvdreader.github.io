@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Biblioteca</title>
+  <link rel='stylesheet' href='asset/Roboto.css'>
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link rel='stylesheet' href='asset/vuetify.min.css'>
+</head>
+
+<body>
+  <div id="app">
+    <v-app id="inspire">
+      <v-app-bar app fixed>
+        <v-app-bar-nav-icon v-if="root != null && breadcrumItems.slice(-1).pop() != root.treeFiles" @click.stop="breadcrumItems.pop()">
+          <v-icon large>mdi-file-tree</v-icon>
+        </v-app-bar-nav-icon>
+        <v-app-bar-nav-icon v-else>
+          <v-icon large>mdi-bookshelf</v-icon>
+        </v-app-bar-nav-icon>
+        <v-toolbar-title>
+          {{breadcrumItems.slice(-1).pop() == undefined ? '' : breadcrumItems.slice(-1).pop().name}}
+        </v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-text-field v-model="search" append-icon="mdi-magnify" label="Cerca" single-line hide-details>
+        </v-text-field>
+        <template v-slot:extension>
+          <v-breadcrumbs class="pa-0">
+            <template v-for="(children, index) in breadcrumItems">
+              <v-icon v-if='index != 0'>mdi-chevron-right</v-icon>
+              <v-breadcrumbs-item >
+                  <v-btn x-small text @click="breadcrumItems=breadcrumItems.slice(0, index+1)" class="pa-0">{{children.name}}</v-btn>
+              </v-breadcrumbs-item>
+            </template>
+          </v-breadcrumbs>
+        </template>
+      </v-app-bar>
+      <v-content>
+        <v-list two-line subheader>
+          <template v-for="(children, index) in filtered">
+            <v-lazy min-height="20" transition="fade-transition">
+              <v-list-item :key="children.name">
+                <v-list-item-content>
+                  <v-list-item-title v-text="children.name"></v-list-item-title>
+                  <v-list-item-subtitle v-text=""></v-list-item-subtitle>
+                </v-list-item-content>
+                <v-list-item-action v-if="children.type == 'file'">
+                  <v-btn icon @click="view(children)">
+                    <v-icon>mdi-eye</v-icon>
+                  </v-btn>
+                  <v-btn icon @click="download(children)">
+                    <v-icon>mdi-file-download</v-icon>
+                  </v-btn>
+                </v-list-item-action>
+                <v-list-item-action v-if="children.type == 'directory'">
+                  <v-btn icon @click="breadcrumItems.push(children)">
+                    <v-icon>mdi-folder-open</v-icon>
+                  </v-btn>
+                </v-list-item-action>
+              </v-list-item>
+            </v-lazy>
+          </template>
+        </v-list>
+      </v-content>
+
+      <v-dialog v-model="dialogPassword" persistent max-width="420px">
+        <v-card>
+          <v-card-title>
+            <span class="headline">Biblioteca0</span>
+          </v-card-title>
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col>
+                  <v-form ref="form">
+                    <v-text-field v-model="urlroot" label="Indirizzo*" 
+                      :rules="[v => !!v || 'indirizzo necessario!', v => urvalid || 'errore!']" prefix="http://" suffix="/convertiti/" required></v-text-field>
+                    <v-text-field v-model="password" label="Password*" type="password"
+                      :rules="[v => !!v || 'password necessaria!', v => pwvalid || 'errore!']" required></v-text-field>
+                  </v-form>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="blue darken-1" text @click="passcheck()">Decripta</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog v-model="dialogViewer" overlay-color="white" fullscreen transition="dialog-bottom-transition">
+        <iframe style="height:97%; border:0px" :srcdoc='sourcedoc'></iframe>
+        <v-footer absolute padless class="justify-center">
+          <v-progress-linear v-model="progressData" :active="progressShow" :indeterminate="progressQuery" height="6">
+          </v-progress-linear>
+          <v-btn small @click="dialogViewer = false">
+            <v-icon small>mdi-close</v-icon>Chiudi
+          </v-btn>
+        </v-footer>
+      </v-dialog>
+    </v-app>
+  </div>
+  <!-- partial -->
+  <script src='asset/polyfill.min.js'></script>
+  <script src='asset/vue.min.js'></script>
+  <script src='asset/vuetify.min.js'></script>
+  <script src="asset/crypto-js.min.js"></script>
+  <script src="asset/jquery.min.js"></script>
+  <script src="asset/axios.min.js"></script>
+  <script src="asset/download.js"></script>
+  <script src="asset/jszip.min.js"></script>
+  <script>
+    new Vue({
+      el: '#app',
+      vuetify: new Vuetify(),
+      data: () => ({
+        urlroot: '',
+        root: null,
+        urlreader: { ".epub": 'epubr.html', ".djvu": 'djvur.html', ".pdf": 'pdfr.html' },
+        sourcedoc: '',
+
+        dialogPassword: true,
+        password: '',
+        pwvalid: true,
+        urvalid: true,
+
+        dialogViewer: false,
+        progressShow: false,
+        progressData: 0,
+        progressQuery: false,
+        search: '',
+        breadcrumItems: [],
+      }),
+      computed: {
+        filtered() {
+          return this.breadcrumItems.slice(-1).pop() != undefined ? this.breadcrumItems.slice(-1).pop().children.filter((children) => {
+            return this.search == '' ? true : children.name.search(new RegExp(this.search, 'i')) > -1;
+          }) : '';
+        }
+      },
+      methods: {
+        async passcheck() {
+          try {
+            const { data } = await axios.get( 'http://' + this.urlroot + '/convertiti/' + CryptoJS.SHA256(this.password).toString());
+            this.root = JSON.parse(CryptoJS.AES.decrypt(data, this.password).toString(CryptoJS.enc.Utf8));
+            this.breadcrumItems.push(this.root.treeFiles);
+            this.dialogPassword = false;
+            this.pwvalid = true;
+            this.urvalid = true;
+          } catch (error) {
+            console.log(error);
+            this.pwvalid = false;
+            this.urvalid = false;
+            this.$refs.form.validate();
+          }
+        },
+        async download(file) {
+          try {
+            const { data } = await axios.get('http://' + this.root.files[file.path] + '/' + this.urlroot + '/' + CryptoJS.SHA256(file.path).toString());
+            var dataFile = CryptoJS.AES.decrypt(data, CryptoJS.MD5(file.path).toString()).toString(CryptoJS.enc.Utf8);
+            download(dataFile, file.name);
+            //window.open(file.name, '_blank');
+          } catch (error) {
+            console.log(error);
+          }
+        },
+        async view(file) {
+          try {
+            this.sourcedoc = '<body style="background-color: white; height: 100vh; width:100vw; text-align: center; display:table-cell; vertical-align:middle;"><svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50"> \
+	              <path fill="#C779D0" d="M25,5A20.14,20.14,0,0,1,45,22.88a2.51,2.51,0,0,0,2.49,2.26h0A2.52,2.52,0,0,0,50,22.33a25.14,25.14,0,0,0-50,0,2.52,2.52,0,0,0,2.5,2.81h0A2.51,2.51,0,0,0,5,22.88,20.14,20.14,0,0,1,25,5Z">\
+		            <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.5s" repeatCount="indefinite"/></path></svg></body>';
+            this.dialogViewer = this.progressShow = true;
+            const { data } = await axios.get('https://' + this.root.files[file.path] + '/' + this.urlroot + '/' + CryptoJS.SHA256(file.path).toString(), {
+              onDownloadProgress: progressEvent => {
+                const totalLength = progressEvent.lengthComputable ? progressEvent.total : progressEvent.target.getResponseHeader('content-length') || progressEvent.target.getResponseHeader('x-decompressed-content-length');
+                if (totalLength !== null)
+                  this.progressData = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                else
+                  this.progressQuery = true;
+              }
+            });
+            var dataFile = CryptoJS.AES.decrypt(data, CryptoJS.MD5(file.path).toString()).toString(CryptoJS.enc.Utf8);
+          } catch (error) {
+            this.sourcedoc = '<body style="background-color: white; height: 100vh; width:100vw; text-align: center; display:table-cell; vertical-align:middle;"><h1>404 ' + file + '</h1><p>' + error + '</p></body>';
+            return 0;
+          } finally {
+            this.progressShow = this.progressQuery = false;
+          }
+          try {
+            const { data } = await axios.get(this.urlreader[file.extension]);
+            this.sourcedoc = data.replace('data:application/pdf;base64,', dataFile);
+            return 0;
+          } catch (error) {
+            this.sourcedoc = '<body style="background-color: white; height: 100vh; width:100vw; text-align: center; display:table-cell; vertical-align:middle;"><h1>404 Lettore</h1><p>' + error + '</p></body>';
+          }
+        },
+      },
+    });
+  </script>
+</body>
+
+</html>
