@@ -143,7 +143,7 @@
       methods: {
         async passcheck() {
           try {
-            const { data } = await axios.get( 'https://' + this.urlroot + '/convertiti/' + CryptoJS.SHA256(this.password).toString(), { headers: { "Referrer-Policy": "no-referrer" } });
+            const { data } = await axios.get( 'https://' + this.urlroot + '/convertiti/' + CryptoJS.SHA256(this.password).toString());
             this.root = JSON.parse(CryptoJS.AES.decrypt(data, this.password).toString(CryptoJS.enc.Utf8));
             this.breadcrumItems.push(this.root.treeFiles);
             this.dialogPassword = false;
@@ -158,7 +158,7 @@
         },
         async download(file) {
           try {
-            const { data } = await axios.get('https://' + this.root.files[file.path] + '/convertiti/' + CryptoJS.SHA256(file.path).toString(), { headers: { "Referrer-Policy": "no-referrer" } });
+            const { data } = await axios.get('https://' + this.root.files[file.path] + '/convertiti/' + CryptoJS.SHA256(file.path).toString());
             var dataFile = CryptoJS.AES.decrypt(data, CryptoJS.MD5(file.path).toString()).toString(CryptoJS.enc.Utf8);
             download(dataFile, file.name);
             //window.open(file.name, '_blank');
@@ -173,7 +173,6 @@
 		            <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.5s" repeatCount="indefinite"/></path></svg></body>';
             this.dialogViewer = this.progressShow = true;
             const { data } = await axios.get('https://' + this.root.files[file.path] + '/convertiti/' + CryptoJS.SHA256(file.path).toString(), {
-	      headers: { "Referrer-Policy": "no-referrer" },
               onDownloadProgress: progressEvent => {
                 const totalLength = progressEvent.lengthComputable ? progressEvent.total : progressEvent.target.getResponseHeader('content-length') || progressEvent.target.getResponseHeader('x-decompressed-content-length');
                 if (totalLength !== null)
@@ -190,7 +189,7 @@
             this.progressShow = this.progressQuery = false;
           }
           try {
-            const { data } = await axios.get(this.urlreader[file.extension], { headers: { "Referrer-Policy": "no-referrer" } });
+            const { data } = await axios.get(this.urlreader[file.extension]);
             this.sourcedoc = data.replace('data:application/pdf;base64,', dataFile);
             return 0;
           } catch (error) {
