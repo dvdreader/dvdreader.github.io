@@ -75,7 +75,7 @@
                 <v-col>
                   <v-form ref="form">
                     <v-text-field v-model="urlroot" label="Indirizzo*" 
-                      :rules="[v => !!v || 'indirizzo necessario!', v => urvalid || 'errore!']" prefix="https://" suffix="/convertiti/" required></v-text-field>
+                      :rules="[v => !!v || 'indirizzo necessario!', v => urvalid || 'errore!']" prefix="https://" required></v-text-field>
                     <v-text-field v-model="password" label="Password*" type="password"
                       :rules="[v => !!v || 'password necessaria!', v => pwvalid || 'errore!']" required></v-text-field>
                   </v-form>
