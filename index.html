@@ -78,6 +78,13 @@
                       :rules="[v => !!v || 'indirizzo necessario!', v => urvalid || 'errore!']" prefix="https://" required></v-text-field>
                     <v-text-field v-model="password" label="Password*" type="password"
                       :rules="[v => !!v || 'password necessaria!', v => pwvalid || 'errore!']" required></v-text-field>
+			  <v-radio-group v-model="serverpath" row mandatory>
+                      <template v-slot:label>
+                        <div>Server:</div>
+                      </template>
+                      <v-radio label="Statico" value="/"></v-radio>
+                      <v-radio label="PHP" value="/conv/download.php?filename="></v-radio>
+                    </v-radio-group>
                   </v-form>
                 </v-col>
               </v-row>
